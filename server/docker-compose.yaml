@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+  desktop:
+    build:
+      context: .
+      dockerfile: "desktop.Dockerfile"
+      args:
+        TOR_PROXY_HOST: "11.1.10.101"
+        TOR_PROXY_PORT: "8118"
+    restart: always
+    volumes:
+      - ".desktop_fs_home:/home"
+      - "/dev/shm:/dev/shm"
+    environment:
+      - "RESOLUTION=1280x720"
+      - "USER=editme"
+      - "PASSWORD=editme"
+    healthcheck:
+      test: ["CMD", "/opt/test-port.sh"]
+      interval: 120s
+      timeout: 4s
+      retries: 2
+    ports:
+      - "<server ssh port 1>:22"
+    networks:
+      private_net:
+        ipv4_address: 11.1.10.100
+
+  front_proxy:
+    build:
+      context: .
+      dockerfile: "front-proxy.Dockerfile"
+      args:
+        TOR_PROXY_HOST: "11.1.10.101"
+        TOR_PROXY_PORT: "8118"
+    restart: always
+    healthcheck:
+      test: ["CMD", "/opt/test-port.sh"]
+      interval: 120s
+      timeout: 4s
+      retries: 2
+    ports:
+      - "<server ssh port 2>:22"
+    networks:
+      private_net:
+        ipv4_address: 11.1.10.102
+
+  simple_proxy:
+    build:
+      context: .
+      dockerfile: "simple-proxy.Dockerfile"
+    restart: always
+    healthcheck:
+      test: ["CMD", "/opt/test-port.sh"]
+      interval: 120s
+      timeout: 4s
+      retries: 2
+    ports:
+      - "<server ssh port 3>:22"
+    networks:
+      private_net:
+        ipv4_address: 11.1.10.103
+
+  tor_proxy:
+    image: dperson/torproxy
+    restart: always
+    networks:
+      private_net:
+        ipv4_address: 11.1.10.101
+
+networks:
+  private_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 11.1.10.0/24

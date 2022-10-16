@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  desktop_tunnel:
+    build:
+      context: .
+      dockerfile: "tunnel.Dockerfile"
+      args:
+        HOST: "<server address>"
+        PORT: "<server ssh port 1>"
+        DIST_PORT: "80"
+        # add a key from stdout of the docker build to .keys dir
+        KEY: "priv1.pem"
+    restart: always
+    ports:
+      - "6800:8000/tcp"
+
+  torproxy_tunnel:
+    build:
+      context: .
+      dockerfile: "tunnel.Dockerfile"
+      args:
+        HOST: "<server address>"
+        PORT: "<server ssh port 2>"
+        DIST_PORT: "3128"
+        KEY: "priv2.pem"
+    restart: always
+    healthcheck:
+      test: ["CMD", "/opt/proxy_check.sh"]
+      interval: 360s
+      timeout: 5s
+      retries: 3
+    ports:
+      - "5128:8000/tcp"
+
+  proxy_tunnel:
+    build:
+      context: .
+      dockerfile: "tunnel.Dockerfile"
+      args:
+        HOST: "<server address>"
+        PORT: "<server ssh port 3>"
+        DIST_PORT: "3128"
+        KEY: "priv3.pem"
+    restart: always
+    healthcheck:
+      test: ["CMD", "/opt/proxy_check.sh"]
+      interval: 300s
+      timeout: 5s
+      retries: 3
+    ports:
+      - "4128:8000/tcp"
